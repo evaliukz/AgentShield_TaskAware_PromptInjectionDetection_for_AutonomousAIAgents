@@ -8,6 +8,14 @@
 
 > **Scope statement:** The graded research task is *binary prompt-injection classification for untrusted agent-visible text*. The broader red-team / blue-team / policy-enforcement platform is a sandboxed demonstration and optional stretch goal, not a substitute for the course's required ICL-vs-fine-tuning evaluation.
 
+## Implementation by milestone
+
+Code and generated reports are grouped under [`milestones/`](./milestones/README.md).
+The Milestone 1 baseline is implemented; its held-out test remains pending.
+Milestone 2 is reserved for few-shot in-context learning.
+See the [Milestone 1 guide](./milestones/milestone1/README.md) for the code map
+and commands.
+
 ## 1. Short English proposal (ready to adapt and submit)
 
 **Title:** AgentShield: Comparing In-Context Learning and Fine-Tuning for Prompt-Injection Detection in Autonomous AI Agents
