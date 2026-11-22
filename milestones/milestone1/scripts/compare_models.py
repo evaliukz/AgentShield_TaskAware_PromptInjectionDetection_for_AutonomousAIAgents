@@ -36,6 +36,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--v1", required=True)
     parser.add_argument("--v2", required=True)
+    parser.add_argument(
+        "--output",
+        default=str(
+            Path(__file__).resolve().parents[1]
+            / "data"
+            / "reports"
+            / "paired_changes.csv"
+        ),
+        help="Path to write changed predictions CSV.",
+    )
     args = parser.parse_args()
 
     # 读取两个版本的预测结果；文件都需包含 id、actual、predicted 列。
@@ -114,13 +124,9 @@ def main():
         print("\nMcNemar exact p-value:", p_value)
 
     # 将预测不同的样本另存为 CSV，便于逐条检查错误变化。
-    changed.to_csv(
-        Path(__file__).resolve().parents[1]
-        / "data"
-        / "reports"
-        / "paired_changes.csv",
-        index=False
-    )
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    changed.to_csv(output_path, index=False)
 
 
 if __name__ == "__main__":
