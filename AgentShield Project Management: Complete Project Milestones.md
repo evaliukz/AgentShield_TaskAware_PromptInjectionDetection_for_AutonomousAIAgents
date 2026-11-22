@@ -11,8 +11,8 @@
 | Milestone | Track | What you learn/build | Completion artifact | Status |
 |---|---|---|---|---|
 | **M1 — Data, Baselines & Zero-Shot Evaluation** | CORE | Dataset reliability, leakage, inference, metrics | Reproducible evaluation + v1/v2 comparison | **Completed (development)** |
-| **M2 — Few-Shot In-Context Learning** | CORE | Example selection, prompting, token-cost trade-offs | 0/4/8-shot comparison on validation | Not started |
-| **M3 — Fine-Tuning & Research Conclusions** | CORE | LoRA, fair evaluation, model selection, generalization | Fine-tuned model + locked test evaluation + research report | Not started |
+| **M2 — Few-Shot In-Context Learning** | CORE | Example selection, prompting, token-cost trade-offs | 0/4/8-shot comparison on validation + frozen ICL candidate | **Completed (development)** |
+| **M3 — LoRA Fine-Tuning & Research Conclusions** | CORE | Parameter-efficient tuning, fair ICL comparison, final generalization | LoRA model + locked test evaluation + research report | **Next / not started** |
 | **M4 — Agent Runtime & Security Workflow** | EXTENSION | Agent orchestration, state, tools, policy gates | Working defender/red/green sandbox demo | Not started |
 | **M5 — Context, Database & RAG** | EXTENSION | Storage, retrieval, tenant-aware context | Persistent workflow + permission-aware RAG | Not started |
 | **M6 — Production AI Infrastructure** | EXTENSION | Scalability, observability, cost, safe deployment | Deployable service with traces, tests and SLOs | Not started |
@@ -24,13 +24,13 @@
 
 **Goal:** Establish a trustworthy baseline *before* attempting to improve the model.
 
-- [x] **1. Inspect dataset schema and quality.** Load the Hugging Face dataset; inspect fields, types, labels, nulls, empty strings, duplicates, class counts, attack families and text lengths. **Why:** Ensure experiments use valid and understood data. **Code:** `scripts/inspect_dataset.py`.
-- [x] **2. Audit data leakage; establish train/dev/test protocol.** Check exact cross-split duplicates and train-to-dev/test character TF-IDF similarity; retain the original train/validation/test splits. **Why:** Avoid misleading performance from overlapping examples. **Code:** `scripts/check_leakage.py`. **Limit:** Semantic/template leakage not ruled out.
-- [x] **3. Implement majority-class baseline.** Predict the label most common in *train* for each validation item. **Why:** Provide a trivial reference showing why accuracy/F1 alone can mislead. **Code:** `scripts/majority_baseline.py`.
-- [x] **4. Build Zero-Shot LLM detector (v1 and v2).** Use a frozen model, structured binary output, fixed prompt versions and an API smoke test. **Why:** Measure detection without training model weights. **Code:** `src/detectors/zero_shot.py`, `src/detectors/prompts.py`, `scripts/run_zero_shot.py`.
-- [x] **5. Evaluate and analyze errors.** Compute confusion matrix, accuracy, precision, recall, F1 and FPR on all **467 validation** examples; inspect false positives/negatives by attack family. **Why:** Understand model behavior and security trade-offs. **Code:** `scripts/analyze_errors.py`, evaluation logic in `scripts/run_zero_shot.py`.
-- [x] **6. Compare prompt versions on paired examples.** Join v1/v2 by sample ID; count fixes/regressions and run exploratory exact McNemar test. **Why:** See *which predictions* changed, not just aggregate metrics. **Code:** `scripts/compare_models.py`.
-- [ ] **7. Reproducibility hardening (recommended).** Pin dependencies; save model name, prompt version/hash, dataset revision, decoding parameters, outputs, timestamps, errors, latency and token usage; create a shared `evaluate.py` module and a one-command run script. **Why:** Make comparisons auditable and repeatable. **Code:** suggested `src/evaluation/metrics.py`, `scripts/evaluate.py`, `requirements.txt` or `pyproject.toml`.
+- [x] **1. Inspect dataset schema and quality.** Load the Hugging Face dataset; inspect fields, types, labels, nulls, empty strings, duplicates, class counts, attack families and text lengths. **Why:** Ensure experiments use valid and understood data. **Code:** `milestones/milestone1/scripts/inspect_dataset.py`.
+- [x] **2. Audit data leakage; establish train/dev/test protocol.** Check exact cross-split duplicates and train-to-dev/test character TF-IDF similarity; retain the original train/validation/test splits. **Why:** Avoid misleading performance from overlapping examples. **Code:** `milestones/milestone1/scripts/check_leakage.py`. **Limit:** Semantic/template leakage not ruled out.
+- [x] **3. Implement majority-class baseline.** Predict the label most common in *train* for each validation item. **Why:** Provide a trivial reference showing why accuracy/F1 alone can mislead. **Code:** `milestones/milestone1/scripts/majority_baseline.py`.
+- [x] **4. Build Zero-Shot LLM detector (v1 and v2).** Use a frozen model, structured binary output, fixed prompt versions and an API smoke test. **Why:** Measure detection without training model weights. **Code:** `milestones/milestone1/src/detectors/zero_shot.py`, `milestones/milestone1/src/detectors/prompts.py`, `milestones/milestone1/scripts/run_zero_shot.py`.
+- [x] **5. Evaluate and analyze errors.** Compute confusion matrix, accuracy, precision, recall, F1 and FPR on all **467 validation** examples; inspect false positives/negatives by attack family. **Why:** Understand model behavior and security trade-offs. **Code:** `milestones/milestone1/scripts/analyze_errors.py`, evaluation logic in `milestones/milestone1/scripts/run_zero_shot.py`.
+- [x] **6. Compare prompt versions on paired examples.** Join v1/v2 by sample ID; count fixes/regressions and run exploratory exact McNemar test. **Why:** See *which predictions* changed, not just aggregate metrics. **Code:** `milestones/milestone1/scripts/compare_models.py`.
+- [~] **7. Reproducibility hardening (partial).** Validation runs have per-sample checkpoints/resume and JSON metadata with model alias, prompt version/hash, dataset, split, timestamps and metrics. Token usage, SDK/environment lock, immutable model revision and a unified evaluator remain to be added where relevant. **Why:** Make comparisons auditable and repeatable. **Code:** `milestones/milestone1/scripts/run_zero_shot.py`.
 
 **Validated M1 results (validation, 467 rows):**
 
@@ -43,38 +43,54 @@
 
 **Observed:** v2 corrected 11 v1 mistakes, introduced 2 new mistakes; both wrong on 21; both correct on 433. Exact McNemar p = 0.02246 **on the development set**. v2 increased recall but also false alarms; quoting-for-analysis benign examples remained difficult. No independent test-set performance claim yet.
 
-**M1 exit criterion:** Re-run the validation benchmark reproducibly, preserve artifacts and freeze baseline prompts. **Do not use the test set to tune them.**
+**M1 exit criterion:** Development baseline and artifacts are complete. **The 545-row test split remains sealed** for the final, post-M3 evaluation.
 
 ---
 
-## M2 — Few-Shot In-Context Learning (ICL) · CORE
+## M2 — Few-Shot In-Context Learning (ICL) · CORE ✅
 
-**Goal:** Test whether labeled examples in the prompt improve detection *without changing model weights*.
+**Goal:** Test whether labeled examples in the prompt improve detection *without changing model weights*. **Status:** Complete on the 467-row validation split; findings are development results and the held-out test is still sealed.
 
-- [ ] **1. Define the ICL research question.** Compare zero-shot vs 4-shot vs 8-shot on the same model, validation data and metrics. **Deliverable:** Experiment matrix and fixed hypotheses.
-- [ ] **2. Build a training-only example pool.** Select examples strictly from `train`, check IDs/duplicates, and include both benign (especially quotation/analysis) and attack scenarios. **Deliverable:** Versioned example manifest.
-- [ ] **3. Implement example selectors.** Start with deterministic balanced examples; optionally compare random and technique-aware selection using fixed seeds. **Deliverable:** `src/icl/example_selector.py`.
-- [ ] **4. Implement Few-Shot detector.** Reuse the zero-shot output schema; prepend example text + correct labels without including validation labels. **Deliverable:** `src/detectors/few_shot.py`.
-- [ ] **5. Evaluate 4-shot and 8-shot.** Run all 467 validation rows with checkpoint/resume and per-sample provenance. **Deliverable:** Predictions and paired metric table.
-- [ ] **6. Evaluate cost and latency.** Record input/output tokens, per-item latency, API errors and estimated price per 1,000 classifications. **Deliverable:** Accuracy–cost–latency comparison.
-- [ ] **7. Analyze subgroup behavior.** Report performance on `approval_authority_escalation`, `memory_trust_boundary`, quoting-for-analysis benign examples, etc.; compare paired regressions. **Deliverable:** ICL findings and limitations.
+- [x] **1. Define the ICL research question and controlled matrix.** Compare 0-shot, 4-shot and two 8-shot selection strategies on `Qwen/Qwen2.5-3B-Instruct`. **Code/report:** `milestones/milestone2/Milestone2Report.md`.
+- [x] **2. Build and verify training-only manifests.** All examples come from `train`; automated ID and normalized-text leakage checks found zero overlap with validation/test. **Code:** `milestones/milestone2/scripts/build_manifests.py`; **artifacts:** `milestones/milestone2/manifests/`.
+- [x] **3. Implement selectors and the few-shot detector.** Support deterministic balanced and seeded-random manifests with a shared strict JSON label contract. **Code:** `milestones/milestone2/src/icl/example_selector.py`, `milestones/milestone2/src/detectors/few_shot.py`.
+- [x] **4. Run all validation comparisons.** Three few-shot arms completed 467/467 each with zero format errors; compare with the 0-shot v2 control. **Code:** `milestones/milestone2/scripts/run_few_shot.py`, `milestones/milestone2/scripts/analyze_icl.py`.
+- [x] **5. Measure cost, latency and subgroup behavior.** Capture token counts, MPS latency, estimated API-equivalent cost, attack-family and technique-level errors. **Evidence:** `milestones/milestone2/Milestone2Report.md` and `milestones/milestone2/assets/`.
+- [x] **6. Freeze the ICL candidate for M3.** Select `random_seed42_8shot` using validation only; manifest SHA-256 prefix `f87a16166299`. **Control metrics:** F1 `0.9577`, recall `0.9545`, precision `0.9608`, FPR `0.0755`, p50 latency `1.353 s`; test data remains unused.
 
-**M2 exit criterion:** Choose a fixed ICL configuration for the final research comparison *using validation only*.
+**Validated M2 results (467 rows; same Qwen base, MPS and greedy decoding):**
+
+| Configuration | F1 | Recall | FPR | Paired result vs. 0-shot v2 |
+|---|---:|---:|---:|---|
+| 0-shot v2 | 0.9063 | 0.8636 | 0.0818 | Baseline |
+| 4-shot balanced | 0.9109 | 0.8799 | 0.1006 | 17 fixed / 15 regressed; McNemar p = 0.8601 |
+| 8-shot balanced | 0.8703 | 0.7955 | 0.0629 | 10 fixed / 28 regressed; p = 0.0051 |
+| **8-shot random seed 42 (frozen)** | **0.9577** | **0.9545** | **0.0755** | **30 fixed / 1 regressed; p = 2.98e-08** |
+
+**Finding:** Shot count alone did not predict performance; two 8-shot manifests differed by 8.74 F1 points. The selected random 8-shot arm improved validation F1 by 5.14 pp over the same-base zero-shot control, but raised p50 latency by 66% and input tokens by 2.40×. It still misclassified 11/12 `quoting_attack_for_analysis` examples. Because the candidate was selected on validation, treat these as exploratory results with selection optimism.
+
+**M2 exit criterion:** Met. Carry the frozen manifest and experiment protocol into M3 without further validation-driven ICL changes.
 
 ---
 
 ## M3 — LoRA Fine-Tuning & Final Research Evaluation · CORE
 
-**Goal:** Fairly compare **In-Context Learning vs Fine-Tuning** and complete the academic research deliverable.
+**Goal:** Fairly compare **In-Context Learning vs Fine-Tuning** and complete the academic research deliverable. This is the next core milestone.
 
-- [ ] **1. Choose a feasible open-weight base model and compute budget.** Match inference/evaluation conditions where possible; distinguish a cross-model comparison from a controlled same-base-model comparison. **Deliverable:** Model/hardware rationale.
+- [x] **1. Choose the base model and initial hardware candidate.** Use the same `Qwen/Qwen2.5-3B-Instruct` base as M2 so LoRA vs. ICL is a controlled comparison. M2 inference ran on Apple M3 Pro MPS (`bfloat16`, batch size 1); first test LoRA on MPS and move to CUDA only if memory, operator or training-speed constraints require it. **Deliverable:** Rationale documented in `milestones/milestone2/Milestone2Report.md`.
 - [ ] **2. Prepare training data.** Map `text → label`, validate labels, deduplicate as appropriate within the training partition, format classification targets and tokenize. **Deliverable:** Versioned training dataset/preprocessing script.
 - [ ] **3. Implement supervised LoRA (or QLoRA) training.** Configure adapters, checkpoints, seeds, batch size, learning rate and early stopping. **Deliverable:** `scripts/train_lora.py`, adapter artifact, training logs.
 - [ ] **4. Tune using validation, not test.** Select checkpoint/hyperparameters and document trial count. **Deliverable:** Final frozen fine-tuned model.
 - [ ] **5. Build one common inference/evaluation interface.** Ensure zero-shot, few-shot and fine-tuned models return comparable labels; use identical preprocessing and metrics. **Deliverable:** Unified evaluator.
-- [ ] **6. Run final, one-time held-out test evaluation.** Freeze model/prompt/threshold selection first; compute global and family-level metrics with uncertainty intervals where appropriate. **Deliverable:** Locked test results.
+- [ ] **6. Freeze candidates and run one-time held-out test evaluation.** Freeze LoRA checkpoint/configuration and M2's `random_seed42_8shot` candidate before touching test; run both on the same 545 test IDs and compute global/family metrics with uncertainty intervals where appropriate. **Deliverable:** Locked paired test results.
 - [ ] **7. Compare quality vs operational cost.** Include model size, training time/cost, inference latency, token use and deployment complexity. **Deliverable:** ICL vs LoRA trade-off matrix.
 - [ ] **8. Write and present findings.** Explain the research question, methods, leakage controls, fairness caveats, results, failure modes and threats to validity. **Deliverable:** CMU presentation + final report.
+
+**M3 design constraints / next actions:**
+- Keep the base model, tokenizer, label mapping, JSON output contract and validation/test examples identical between ICL and LoRA where applicable; report training and inference costs separately.
+- Train only on the 3,923-row training split. Use validation for checkpoint/hyperparameter selection; do not inspect test examples or metrics before both candidates are frozen.
+- Start with ordinary LoRA on MPS as a feasibility pilot. M2 proves local MPS inference works, not that a particular LoRA training stack/config fits memory. Record peak memory, throughput, sequence length and actual device; use a CUDA GPU environment only if the pilot demonstrates a concrete need.
+- Treat validation-selected ICL and LoRA results as development results; make the final claim from the locked, paired 545-row test evaluation.
 
 **M3 exit criterion:** A complete, reproducible research comparison with a test-set conclusion (and honest limitations).
 
@@ -150,9 +166,9 @@
 ```text
 M1 Data & zero-shot evaluation (done)
   ↓
-M2 Few-shot ICL
+M2 Few-shot ICL (done; random_seed42_8shot frozen on validation)
   ↓
-M3 LoRA + locked final test + CMU report   ← FIRST PRIORITY
+M3 LoRA + locked paired test + CMU report   ← CURRENT PRIORITY
   ↓
 M4 Safe agent runtime
   ↓
@@ -163,7 +179,7 @@ M6 Productionization
 M7 Portfolio + interview story
 ```
 
-**Scope control:** Finish **M1 reproducibility cleanup + M2 + M3** before expanding deeply into M4–M7. The core project asks *which detector approach works better and at what cost?* The extension asks *how do we safely operate that detector inside a real agentic system?*
+**Scope control:** Finish **M3 LoRA and the locked test comparison** before expanding deeply into M4–M7. M1/M2 development work is complete; preserve their frozen candidates and do not reopen test data for further tuning. The core project asks *which detector approach works better and at what cost?* The extension asks *how do we safely operate that detector inside a real agentic system?*
 
 ## Reusable engineering pattern (apply to every milestone)
 
@@ -181,20 +197,24 @@ M7 Portfolio + interview story
 
 | File/module | Role | Status |
 |---|---|---|
-| `scripts/inspect_dataset.py` | Schema, counts, data quality | M1 implemented |
-| `scripts/check_leakage.py` | Exact/near-duplicate cross-split audit | M1 implemented |
-| `scripts/majority_baseline.py` | Trivial no-ML baseline | M1 implemented |
-| `src/detectors/prompts.py` | Versioned zero-shot instructions | M1 implemented |
-| `src/detectors/zero_shot.py` | Structured-output model inference | M1 implemented |
-| `scripts/run_zero_shot.py` | Inference loop, results/latency | M1 implemented; harden for reproducibility |
-| `scripts/analyze_errors.py` | Inspect FP/FN examples | M1 implemented |
-| `scripts/compare_models.py` | Paired evaluation, McNemar | M1 implemented |
-| `src/icl/example_selector.py` | Training-only shot selection | M2 planned |
-| `src/detectors/few_shot.py` | Few-shot model wrapper | M2 planned |
-| `scripts/train_lora.py` | LoRA model adaptation | M3 planned |
+| `milestones/milestone1/scripts/inspect_dataset.py` | Schema, counts, data quality | M1 implemented |
+| `milestones/milestone1/scripts/check_leakage.py` | Exact/near-duplicate cross-split audit | M1 implemented |
+| `milestones/milestone1/scripts/majority_baseline.py` | Trivial no-ML baseline | M1 implemented |
+| `milestones/milestone1/src/detectors/prompts.py` | Versioned zero-shot instructions | M1 implemented |
+| `milestones/milestone1/src/detectors/zero_shot.py` | Structured-output model inference | M1 implemented |
+| `milestones/milestone1/scripts/run_zero_shot.py` | Checkpointed inference, metadata and metrics | M1 implemented; token/environment pinning remains partial |
+| `milestones/milestone1/scripts/analyze_errors.py` | Inspect FP/FN examples | M1 implemented |
+| `milestones/milestone1/scripts/compare_models.py` | Paired evaluation, McNemar | M1 implemented |
+| `milestones/milestone2/src/icl/example_selector.py` | Training-only shot selection and leakage checks | M2 implemented |
+| `milestones/milestone2/src/detectors/few_shot.py` | Local HF and OpenAI few-shot wrapper | M2 implemented |
+| `milestones/milestone2/scripts/run_few_shot.py` | Checkpointed ICL validation runner | M2 implemented |
+| `milestones/milestone2/scripts/analyze_icl.py` | Paired, subgroup and cost/latency analysis | M2 implemented |
+| `milestones/milestone2/manifests/random_seed42_8shot.json` | Frozen training-only ICL candidate | M2 selected on validation; test sealed |
+| `milestones/milestone3/scripts/train_lora.py` | LoRA training pipeline | M3 planned |
+| `milestones/milestone3/` | LoRA model, paired test comparison and report | M3 not started |
 | `src/policy/engine.py` | Deterministic authorization | M4 planned |
 | `src/agents/` | Agent runtime / sandbox tools | M4 planned |
 | `src/storage/`, `src/rag/` | State and contextual retrieval | M5 planned |
 | `src/api/`, `src/observability/` | Service and production monitoring | M6 planned |
 
-*Status reflects what has been discussed/reported in this conversation; inspect the repository before treating any code path as verified in GitHub.*
+*Milestone 1 and 2 paths are organized under `milestones/milestone1/` and `milestones/milestone2/`. M3 is the next stage; its directory and training code have not yet been created.*
