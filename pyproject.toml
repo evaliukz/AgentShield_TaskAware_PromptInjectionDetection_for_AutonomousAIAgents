@@ -1,0 +1,28 @@
+[project]
+name = "agentshield"
+version = "0.1.0"
+description = "Task-Aware Prompt-Injection Detection for Autonomous AI Agents"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "accelerate>=1.0.0",
+    "datasets>=3.0.0",
+    "matplotlib>=3.8.0",
+    "numpy>=1.26.0",
+    "openai>=1.50.0",
+    "pandas>=2.2.0",
+    "python-dotenv>=1.0.0",
+    "scikit-learn>=1.5.0",
+    "scipy>=1.13.0",
+    "torch>=2.4.0",
+    "transformers>=4.45.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

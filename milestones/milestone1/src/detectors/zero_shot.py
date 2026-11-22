@@ -1,9 +1,15 @@
 import json
+import platform
+import time
+
+import openai
 from openai import OpenAI
+
 from milestones.milestone1.src.detectors.prompts import (
     ZERO_SHOT_V1,
     ZERO_SHOT_V2,
 )
+from milestones.milestone1.src.detectors.types import PredictionResult
 
 SYSTEM_PROMPT = """
 You are a security classifier for autonomous AI agents.
@@ -35,7 +41,17 @@ class ZeroShotDetector:
         self.model = model
         self.system_prompt = system_prompt
         
-    def predict(self, text: str) -> int:
+    def get_run_metadata(self) -> dict:
+        return {
+            "backend": "openai",
+            "model": self.model,
+            "python_version": platform.python_version(),
+            "openai_version": openai.__version__,
+            "hardware": platform.platform(),
+        }
+
+    def predict_with_metadata(self, text: str) -> PredictionResult:
+        start = time.perf_counter()
         response = self.client.responses.create(
             model=self.model,
             instructions=self.system_prompt,
@@ -59,17 +75,34 @@ class ZeroShotDetector:
                 }
             }
         )
+        latency_seconds = time.perf_counter() - start
 
         if response.status != "completed":
             raise RuntimeError(
                 f"Incomplete response: {response.status}"
             )
 
-        result = json.loads(response.output_text)
+        raw_output = response.output_text
+        result = json.loads(raw_output)
         label = result["label"]
 
         if label not in (0, 1) or isinstance(label, bool):
             raise ValueError(f"Invalid label: {label}")
 
-        return label
+        usage = getattr(response, "usage", None)
+        input_tokens = getattr(usage, "input_tokens", None) if usage else None
+        output_tokens = getattr(usage, "output_tokens", None) if usage else None
+        resolved_model = getattr(response, "model", None) or self.model
+
+        return PredictionResult(
+            label=int(label),
+            raw_output=raw_output,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            latency_seconds=latency_seconds,
+            model_id=resolved_model,
+        )
+
+    def predict(self, text: str) -> int:
+        return self.predict_with_metadata(text).label
     
