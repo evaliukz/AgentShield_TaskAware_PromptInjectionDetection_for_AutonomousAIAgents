@@ -124,7 +124,9 @@ milestone3/
 ├── scripts/
 │   ├── train_lora.py       # Train LoRA and select checkpoint by validation loss
 │   ├── evaluate_lora.py    # Checkpointed evaluation on validation or explicit final test
-│   └── compare_lora.py     # Paired M2 ICL vs LoRA validation/test comparison
+│   ├── compare_lora.py     # Paired M2 ICL vs LoRA validation/test comparison
+│   └── plot_milestone3.py  # Regenerate report figures from paired test results
+├── assets/                 # Comparison figures embedded in Milestone3Report.md
 └── src/
     ├── training.py         # Data validation, chat formatting, masked loss collator
     └── detectors/lora.py   # Greedy JSON-label inference from a saved adapter

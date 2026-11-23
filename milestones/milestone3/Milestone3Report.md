@@ -112,6 +112,8 @@ In this sequential single-example setup, LoRA used about 58% fewer mean input to
 
 ## 5. Final paired test results — one-time evaluation
 
+![Overall test metrics for frozen ICL and LoRA, with 95% paired bootstrap intervals](assets/01_test_overall_metrics.png)
+
 | Candidate | Accuracy | Precision | Recall | F1 | FPR |
 |---|---:|---:|---:|---:|---:|
 | Frozen 8-shot ICL | 0.9119 | 0.8742 | 0.9679 | 0.9186 | 0.1472 |
@@ -124,6 +126,8 @@ In this sequential single-example setup, LoRA used about 58% fewer mean input to
 | Frozen LoRA | 280 | 1 | 264 | 0 |
 
 LoRA corrected 48 ICL errors and regressed on 1. There were 496 examples on which both were correct and 0 on which both were wrong. The exact two-sided McNemar test gave `p = 1.78e-13`. This statistic tests paired disagreement in correctness on this sample; it does not establish performance on other benchmarks.
+
+![Paired test correctness outcomes: fixes, regressions, and shared outcomes](assets/03_test_paired_outcomes.png)
 
 ### 5.1 Overall 95% paired bootstrap intervals
 
@@ -143,6 +147,8 @@ LoRA corrected 48 ICL errors and regressed on 1. There were 496 examples on whic
 | `memory_trust_boundary` | 56 | 1.0000 / 1.0000 | 1.0000 / 1.0000 | 0.0000 [0.0000, 0.0000] |
 | `rag_document_embedded` | 84 | 0.9940 / 0.9881 | 1.0000 / 1.0000 | +0.0060 [0.0000, 0.0182] |
 | `tool_function_abuse` | 56 | 1.0000 / 1.0000 | 1.0000 / 1.0000 | 0.0000 [0.0000, 0.0000] |
+
+![Test F1 comparison across attack families](assets/02_test_attack_families.png)
 
 The benign subgroup contained 265 examples. ICL produced 39 false positives (FPR `0.1472`); LoRA produced 1 (FPR `0.0038`). The paired 95% bootstrap interval for the FPR difference was `[−0.1887, −0.1019]`.
 
@@ -186,6 +192,7 @@ Key experiment details are recorded in the run metadata and comparison outputs:
 - Training implementation: [`train_lora.py`](scripts/train_lora.py)
 - Evaluation implementation: [`evaluate_lora.py`](scripts/evaluate_lora.py)
 - Paired comparison and bootstrap implementation: [`compare_lora.py`](scripts/compare_lora.py)
+- Report figure generation: [`plot_milestone3.py`](scripts/plot_milestone3.py); PNGs are in [`assets/`](assets/)
 - Shared task formatting, masked loss, and split checks: [`training.py`](src/training.py)
 - Split-specific pinned dataset loader: [`dataset.py`](../milestone2/src/icl/dataset.py)
 - Frozen ICL selection rationale and development study: [`Milestone 2 report`](../milestone2/Milestone2Report.md)
