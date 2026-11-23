@@ -18,6 +18,8 @@ not being used for further tuning.
 See the [Milestone 1 guide](./milestones/milestone1/README.md) for the code map
 and commands.
 
+Course deliverables: [recommended presentation slides and script](./presentation/Recommended_Slides_and_Script.md) and the [integrated HW12 final report](./final_report/Final_Report.md).
+
 ## 1. Short English proposal (ready to adapt and submit)
 
 **Title:** AgentShield: Comparing In-Context Learning and Fine-Tuning for Prompt-Injection Detection in Autonomous AI Agents
