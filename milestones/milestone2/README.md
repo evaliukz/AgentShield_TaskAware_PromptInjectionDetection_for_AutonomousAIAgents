@@ -4,7 +4,10 @@ Milestone 2 evaluates controlled few-shot in-context learning (`0-shot` vs.
 `4-shot` vs. `8-shot`, plus curated vs. stratified-random example selection) on
 the same frozen open-weight base model established in Milestone 1b
 (`Qwen/Qwen2.5-3B-Instruct`), strictly selecting demonstrations from the
-training split and keeping the 545-sample held-out test split sealed.
+training split. The frozen `random_seed42_8shot` candidate was later
+evaluated once on the held-out test split as part of Milestone 3; see
+[`../milestone3/README.md`](../milestone3/README.md) for paired ICL-vs-LoRA
+results.
 
 Full findings, accuracy–token–latency trade-offs, subgroup error analysis, and
 the frozen ICL configuration selected for Milestone 3 are documented in

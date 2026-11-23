@@ -5,7 +5,7 @@
 **Repository:** https://github.com/evaliukz/AgentShield_TaskAware_PromptInjectionDetection_for_AutonomousAIAgents  
 **Scope:** Data quality → leakage audit → deterministic baseline → zero-shot LLM inference → evaluation, error analysis, and paired comparison
 
-> **Executive summary.** We established a reproducible, text-only binary prompt-injection classification benchmark with a fixed train/validation/test protocol. On all **467 validation samples**, zero-shot prompt v2 improved **F1 from 0.9474 to 0.9630** and **recall from 0.9351 to 0.9708**, while **FPR increased from 0.0755 to 0.0881**. Paired analysis showed 11 previously incorrect predictions corrected and 2 new errors. These are **development-set results**, not unbiased held-out generalization estimates. The test split remains sealed.
+> **Executive summary.** We established a reproducible, text-only binary prompt-injection classification benchmark with a fixed train/validation/test protocol. On all **467 validation samples**, zero-shot prompt v2 improved **F1 from 0.9474 to 0.9630** and **recall from 0.9351 to 0.9708**, while **FPR increased from 0.0755 to 0.0881**. Paired analysis showed 11 previously incorrect predictions corrected and 2 new errors. These are **development-set results**, not unbiased held-out generalization estimates. The test split was evaluated once for the frozen M2 and M3 candidates; see [`../milestone3/README.md`](../milestone3/README.md) for their paired comparison. M1 model results remain validation-only.
 
 ## 1. Research question and scope
 
@@ -194,4 +194,4 @@ All 13 changed predictions moved **0 → 1**: 11 fixed false negatives, and 2 ne
 2. **Experiments:** Majority baseline exposes FPR failure; zero-shot v1→v2 raises recall and F1 but slightly increases false alarms (Figures 3–4).
 3. **Engineering conclusions:** Paired 11 fixed / 2 regressed; quote-analysis remains difficult; next step is controlled few-shot/LoRA comparison and context-aware agent integration (Figure 5).
 
-**Scope notes:** The PNG figures are presentation-ready summaries supplied with the project materials and are stored beside this report in [`assets/`](assets/). Their values were checked against the saved validation metrics and paired comparison artifacts. Model reasoning is not directly observable. These validation findings are exploratory, and no final held-out test performance is claimed.
+**Scope notes:** The PNG figures are presentation-ready summaries supplied with the project materials and are stored beside this report in [`assets/`](assets/). Their values were checked against the saved validation metrics and paired comparison artifacts. Model reasoning is not directly observable. These M1 validation findings are exploratory; final paired test results and limitations are reported in [`../milestone3/README.md`](../milestone3/README.md).

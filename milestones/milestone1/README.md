@@ -3,8 +3,10 @@
 This folder contains the Milestone 1 implementation and its generated reports.
 The stages follow the experiment workflow:
 
-The zero-shot validation runs and paired comparison are complete. The formal
-held-out test is intentionally still pending.
+The zero-shot validation runs and paired comparison are complete. The
+held-out test was evaluated once for the frozen M2 and M3 candidates; see
+[`../milestone3/README.md`](../milestone3/README.md) for their final paired
+comparison. M1 model results remain validation-set development results.
 
 The presentation-ready findings and reusable workflow are documented in
 [`Milestone1Report.md`](Milestone1Report.md) (`gpt-4o-mini` baseline) and

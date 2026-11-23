@@ -15,6 +15,9 @@ JSON_SCHEMA_INSTRUCTION = (
     '{"label": 0} or {"label": 1}.\n'
     'Do not include markdown code fences, explanations, or any extra keys.'
 )
+DEFAULT_HF_REVISIONS = {
+    "Qwen/Qwen2.5-3B-Instruct": "aa8e72537993ba99e69dfaafa59ed015b17504d1",
+}
 
 
 @dataclass(frozen=True)
@@ -99,6 +102,7 @@ class LocalHFFewShotDetector:
         device: str = "auto",
         dtype: str = "auto",
         max_new_tokens: int = 24,
+        revision: str | None = None,
     ):
         import torch
         import transformers
@@ -108,6 +112,7 @@ class LocalHFFewShotDetector:
         self._transformers_version = transformers.__version__
         self.examples = tuple(examples)
         self.model_name = model
+        revision = revision or DEFAULT_HF_REVISIONS.get(model)
         self.base_system_prompt = system_prompt
         self.effective_system_prompt = (
             system_prompt.rstrip() + "\n" + JSON_SCHEMA_INSTRUCTION
@@ -143,10 +148,14 @@ class LocalHFFewShotDetector:
         else:
             raise ValueError(f"Unsupported dtype: {dtype}")
 
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.model_name,
+            revision=revision,
+        )
         self.model = AutoModelForCausalLM.from_pretrained(
             self.model_name,
             dtype=self.dtype,
+            revision=revision,
         )
         self.model.to(self.device)
         self.model.eval()
@@ -157,7 +166,7 @@ class LocalHFFewShotDetector:
             self.model.generation_config.top_p = None
             self.model.generation_config.top_k = None
 
-        self.model_revision = _resolve_hf_revision(
+        self.model_revision = revision or _resolve_hf_revision(
             self.model_name, self.model.config
         )
 
