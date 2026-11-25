@@ -5,7 +5,7 @@
 **Repository:** https://github.com/evaliukz/AgentShield_TaskAware_PromptInjectionDetection_for_AutonomousAIAgents  
 **Scope:** Local open-weight zero-shot evaluation (`Qwen/Qwen2.5-3B-Instruct`, v1 vs. v2) + Milestone 1 reproducibility hardening
 
-> **Executive summary.** To enable a controlled, same-base-model comparison across Zero-Shot (M1b), Few-Shot ICL (M2), and LoRA Fine-Tuning (M3), we added a local Hugging Face detector backend and evaluated `Qwen/Qwen2.5-3B-Instruct` on all **467 validation samples** using the unchanged Milestone 1 prompts (`v1` and `v2`). Prompt `v2` improved **F1 from 0.8313 to 0.9063 (+7.50 pp)** and **recall from 0.7760 to 0.8636 (+8.77 pp)** while **cutting FPR by more than half from 0.1761 to 0.0818 (−9.43 pp)**. Paired analysis recorded **56 fixes** and **14 regressions** (exploratory exact two-sided McNemar `p = 4.30e-07` on dev). All 934 inferences returned strict schema-compliant JSON (`0` errors). The 545-sample test split remains sealed.
+> **Executive summary.** To enable a controlled, same-base-model comparison across Zero-Shot (M1b), Few-Shot ICL (M2), and LoRA Fine-Tuning (M3), we added a local Hugging Face detector backend and evaluated `Qwen/Qwen2.5-3B-Instruct` on all **467 validation samples** using the unchanged Milestone 1 prompts (`v1` and `v2`). Prompt `v2` improved **F1 from 0.8313 to 0.9063 (+7.50 pp)** and **recall from 0.7760 to 0.8636 (+8.77 pp)** while **cutting FPR by more than half from 0.1761 to 0.0818 (−9.43 pp)**. Paired analysis recorded **56 fixes** and **14 regressions** (exploratory exact two-sided McNemar `p = 4.30e-07` on dev). All 934 inferences returned strict schema-compliant JSON (`0` errors). These remain M1b development results; the frozen M2 and M3 candidates' one-time paired test comparison is reported in [`../milestone3/README.md`](../milestone3/README.md).
 
 ## 1. Motivation and scope
 
@@ -14,7 +14,7 @@ Milestone 1 established a commercial API reference with `gpt-4o-mini` (`v2` vali
 1. **Controlled ICL-vs-LoRA attribution:** Comparing ICL on closed-weight `gpt-4o-mini` against LoRA on an open-weight model confounds training method with model family and size. Benchmarking `Qwen/Qwen2.5-3B-Instruct` here establishes a single frozen base model for `0-shot → 4-shot → 8-shot → LoRA` under identical hardware and decoding settings, while keeping `gpt-4o-mini` as the commercial reference.
 2. **Clear experimental headroom:** `gpt-4o-mini` v2 already sits at `0.9630` F1 (only 23 validation errors), leaving limited room to measure adaptation gains. `Qwen/Qwen2.5-3B-Instruct` v2 leaves 55 well-structured validation errors (`42 FN`, `13 FP`) across specific techniques, creating clean diagnostic targets for M2 and M3.
 
-As in Milestone 1, this remains a **text-only** binary classification benchmark (`0 = benign`, `1 = prompt injection`) on `3nesdeniz/agentic-prompt-injection-5k`. All results are **validation-set development findings**; the 545-sample test split was not evaluated.
+As in Milestone 1, this remains a **text-only** binary classification benchmark (`0 = benign`, `1 = prompt injection`) on `3nesdeniz/agentic-prompt-injection-5k`. The results in this report are **validation-set development findings**; the 545-sample test was evaluated later, once, after candidate selection, with results in [`../milestone3/README.md`](../milestone3/README.md).
 
 ## 2. Implementation and reproducibility hardening
 

@@ -10,7 +10,6 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from datasets import load_dataset
 from dotenv import load_dotenv
 import numpy as np
 
@@ -22,8 +21,12 @@ from milestones.milestone2.src.icl.example_selector import (
     load_manifest,
     normalize_text_hash,
 )
+from milestones.milestone2.src.icl.dataset import (
+    DATASET_NAME,
+    DATASET_REVISION,
+    load_benchmark_split,
+)
 
-DATASET_NAME = "3nesdeniz/agentic-prompt-injection-5k"
 MILESTONE_ROOT = Path(__file__).resolve().parents[1]
 PROMPTS = {
     "v1": ZERO_SHOT_V1,
@@ -248,11 +251,13 @@ def create_detector(args, model: str, prompt: str, examples):
     )
 
 
-def resolve_output_path(args, model: str, manifest_name: str) -> Path:
+def resolve_output_path(
+    args, model: str, manifest_name: str, split: str = "validation"
+) -> Path:
     reports_dir = MILESTONE_ROOT / "data" / "reports"
     suffix = f"_smoke{args.max_samples}" if args.max_samples else ""
     slug = slugify_model(model)
-    stem = f"few_shot_{slug}_{args.prompt_version}_{manifest_name}_validation{suffix}"
+    stem = f"few_shot_{slug}_{args.prompt_version}_{manifest_name}_{split}{suffix}"
     return reports_dir / f"{stem}.csv"
 
 
@@ -286,6 +291,12 @@ def main():
     parser.add_argument("--dtype", default="auto")
     parser.add_argument("--max-new-tokens", type=int, default=24)
     parser.add_argument("--max-samples", type=int, default=None)
+    parser.add_argument(
+        "--split",
+        choices=("validation", "test"),
+        default="validation",
+        help="Use test only for the final frozen evaluation.",
+    )
     parser.add_argument("--ref-input-price-per-1m", type=float, default=0.15)
     parser.add_argument("--ref-output-price-per-1m", type=float, default=0.60)
     parser.add_argument(
@@ -296,14 +307,18 @@ def main():
     args = parser.parse_args()
 
     manifest = load_manifest(Path(args.manifest))
+    if args.split == "test" and args.max_samples is not None:
+        raise ValueError("--max-samples is not allowed for the final test run.")
     model = args.model or DEFAULT_MODELS[args.backend]
     prompt = PROMPTS[args.prompt_version]
-    output_path = resolve_output_path(args, model, manifest.name)
+    output_path = resolve_output_path(args, model, manifest.name, args.split)
     metadata_path = output_path.with_suffix(".json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    dataset = load_dataset(DATASET_NAME)
-    validation = dataset["validation"]
+    validation = load_benchmark_split(
+        args.split,
+        allow_test=(args.split == "test"),
+    )
 
     # Defense-in-depth runtime leakage guard against validation rows.
     demo_ids = {ex.id for ex in manifest.examples}
@@ -318,14 +333,25 @@ def main():
         if args.max_samples <= 0 or args.max_samples > len(validation):
             raise ValueError(f"--max-samples must be between 1 and {len(validation)}")
         validation = validation.select(range(args.max_samples))
+    if args.split == "test" and len(validation) != 545:
+        raise ValueError(
+            f"The final test run must contain exactly 545 rows, got {len(validation)}."
+        )
 
     detector = create_detector(args, model, prompt, manifest.examples)
     runtime_info = detector.get_run_metadata()
 
     config = {
         "dataset": DATASET_NAME,
-        "split": "validation",
+        "dataset_revision": DATASET_REVISION,
+        "split": args.split,
         "sample_count": len(validation),
+        "sample_ids_sha256": hashlib.sha256(
+            "\n".join(sorted(str(row["id"]) for row in validation)).encode(
+                "utf-8"
+            )
+        ).hexdigest(),
+        "test_split_accessed": args.split == "test",
         "backend": args.backend,
         "model": model,
         "prompt_version": args.prompt_version,

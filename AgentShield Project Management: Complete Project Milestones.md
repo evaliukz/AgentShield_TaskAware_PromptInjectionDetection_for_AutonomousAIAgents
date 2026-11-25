@@ -4,7 +4,7 @@
 >
 > **Status legend:** `[x]` completed · `[ ]` to do · `[~]` partial / needs verification.  
 > **Tracks:** **CORE** = research deliverable; **EXTENSION** = production-system portfolio.  
-> **Important:** A development-set result is not a final generalization claim. Keep the official test set untouched until the final model selection.
+> **Important:** A development-set result is not a final generalization claim. The official test set was accessed once after model selection; do not use its results for further tuning.
 
 ## At a glance
 
@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | **M1 — Data, Baselines & Zero-Shot Evaluation** | CORE | Dataset reliability, leakage, inference, metrics | Reproducible evaluation + v1/v2 comparison | **Completed (development)** |
 | **M2 — Few-Shot In-Context Learning** | CORE | Example selection, prompting, token-cost trade-offs | 0/4/8-shot comparison on validation + frozen ICL candidate | **Completed (development)** |
-| **M3 — LoRA Fine-Tuning & Research Conclusions** | CORE | Parameter-efficient tuning, fair ICL comparison, final generalization | LoRA model + locked test evaluation + research report | **Next / not started** |
+| **M3 — LoRA Fine-Tuning & Research Conclusions** | CORE | Parameter-efficient tuning, fair ICL comparison, final generalization | LoRA model + locked test evaluation + research report | **In progress (training, paired validation/test, and written report complete; presentation/cost accounting pending)** |
 | **M4 — Agent Runtime & Security Workflow** | EXTENSION | Agent orchestration, state, tools, policy gates | Working defender/red/green sandbox demo | Not started |
 | **M5 — Context, Database & RAG** | EXTENSION | Storage, retrieval, tenant-aware context | Persistent workflow + permission-aware RAG | Not started |
 | **M6 — Production AI Infrastructure** | EXTENSION | Scalability, observability, cost, safe deployment | Deployable service with traces, tests and SLOs | Not started |
@@ -41,22 +41,22 @@
 | Precision | 0.6595 | **0.9600** | 0.9553 |
 | FPR | 1.0000 | **0.0755** | 0.0881 |
 
-**Observed:** v2 corrected 11 v1 mistakes, introduced 2 new mistakes; both wrong on 21; both correct on 433. Exact McNemar p = 0.02246 **on the development set**. v2 increased recall but also false alarms; quoting-for-analysis benign examples remained difficult. No independent test-set performance claim yet.
+**Observed:** v2 corrected 11 v1 mistakes, introduced 2 new mistakes; both wrong on 21; both correct on 433. Exact McNemar p = 0.02246 **on the development set**. v2 increased recall but also false alarms; quoting-for-analysis benign examples remained difficult. The M1 models were not included in the later paired test evaluation; these M1 results remain development-only.
 
-**M1 exit criterion:** Development baseline and artifacts are complete. **The 545-row test split remains sealed** for the final, post-M3 evaluation.
+**M1 exit criterion:** Development baseline and artifacts are complete. The 545-row test split was evaluated once after M2/M3 candidates were frozen; final paired results are reported in the [M3 README](milestones/milestone3/README.md).
 
 ---
 
 ## M2 — Few-Shot In-Context Learning (ICL) · CORE ✅
 
-**Goal:** Test whether labeled examples in the prompt improve detection *without changing model weights*. **Status:** Complete on the 467-row validation split; findings are development results and the held-out test is still sealed.
+**Goal:** Test whether labeled examples in the prompt improve detection *without changing model weights*. **Status:** Validation study complete; the frozen candidate's one-time test evaluation is included in M3.
 
 - [x] **1. Define the ICL research question and controlled matrix.** Compare 0-shot, 4-shot and two 8-shot selection strategies on `Qwen/Qwen2.5-3B-Instruct`. **Code/report:** `milestones/milestone2/Milestone2Report.md`.
 - [x] **2. Build and verify training-only manifests.** All examples come from `train`; automated ID and normalized-text leakage checks found zero overlap with validation/test. **Code:** `milestones/milestone2/scripts/build_manifests.py`; **artifacts:** `milestones/milestone2/manifests/`.
 - [x] **3. Implement selectors and the few-shot detector.** Support deterministic balanced and seeded-random manifests with a shared strict JSON label contract. **Code:** `milestones/milestone2/src/icl/example_selector.py`, `milestones/milestone2/src/detectors/few_shot.py`.
 - [x] **4. Run all validation comparisons.** Three few-shot arms completed 467/467 each with zero format errors; compare with the 0-shot v2 control. **Code:** `milestones/milestone2/scripts/run_few_shot.py`, `milestones/milestone2/scripts/analyze_icl.py`.
 - [x] **5. Measure cost, latency and subgroup behavior.** Capture token counts, MPS latency, estimated API-equivalent cost, attack-family and technique-level errors. **Evidence:** `milestones/milestone2/Milestone2Report.md` and `milestones/milestone2/assets/`.
-- [x] **6. Freeze the ICL candidate for M3.** Select `random_seed42_8shot` using validation only; manifest SHA-256 prefix `f87a16166299`. **Control metrics:** F1 `0.9577`, recall `0.9545`, precision `0.9608`, FPR `0.0755`, p50 latency `1.353 s`; test data remains unused.
+- [x] **6. Freeze the ICL candidate for M3.** Select `random_seed42_8shot` using validation only; manifest SHA-256 prefix `f87a16166299`. **Control metrics:** F1 `0.9577`, recall `0.9545`, precision `0.9608`, FPR `0.0755`, p50 latency `1.353 s`.
 
 **Validated M2 results (467 rows; same Qwen base, MPS and greedy decoding):**
 
@@ -69,30 +69,69 @@
 
 **Finding:** Shot count alone did not predict performance; two 8-shot manifests differed by 8.74 F1 points. The selected random 8-shot arm improved validation F1 by 5.14 pp over the same-base zero-shot control, but raised p50 latency by 66% and input tokens by 2.40×. It still misclassified 11/12 `quoting_attack_for_analysis` examples. Because the candidate was selected on validation, treat these as exploratory results with selection optimism.
 
-**M2 exit criterion:** Met. Carry the frozen manifest and experiment protocol into M3 without further validation-driven ICL changes.
+**M2 exit criterion:** Met. The frozen manifest and experiment protocol were used in M3's one-time paired test evaluation; do not make further validation- or test-driven ICL changes.
 
 ---
 
-## M3 — LoRA Fine-Tuning & Final Research Evaluation · CORE
+## M3 — LoRA Fine-Tuning & Final Research Evaluation · CORE · IN PROGRESS (PAIRED TEST AND REPORT COMPLETE)
 
 **Goal:** Fairly compare **In-Context Learning vs Fine-Tuning** and complete the academic research deliverable. This is the next core milestone.
 
-- [x] **1. Choose the base model and initial hardware candidate.** Use the same `Qwen/Qwen2.5-3B-Instruct` base as M2 so LoRA vs. ICL is a controlled comparison. M2 inference ran on Apple M3 Pro MPS (`bfloat16`, batch size 1); first test LoRA on MPS and move to CUDA only if memory, operator or training-speed constraints require it. **Deliverable:** Rationale documented in `milestones/milestone2/Milestone2Report.md`.
-- [ ] **2. Prepare training data.** Map `text → label`, validate labels, deduplicate as appropriate within the training partition, format classification targets and tokenize. **Deliverable:** Versioned training dataset/preprocessing script.
-- [ ] **3. Implement supervised LoRA (or QLoRA) training.** Configure adapters, checkpoints, seeds, batch size, learning rate and early stopping. **Deliverable:** `scripts/train_lora.py`, adapter artifact, training logs.
-- [ ] **4. Tune using validation, not test.** Select checkpoint/hyperparameters and document trial count. **Deliverable:** Final frozen fine-tuned model.
-- [ ] **5. Build one common inference/evaluation interface.** Ensure zero-shot, few-shot and fine-tuned models return comparable labels; use identical preprocessing and metrics. **Deliverable:** Unified evaluator.
-- [ ] **6. Freeze candidates and run one-time held-out test evaluation.** Freeze LoRA checkpoint/configuration and M2's `random_seed42_8shot` candidate before touching test; run both on the same 545 test IDs and compute global/family metrics with uncertainty intervals where appropriate. **Deliverable:** Locked paired test results.
-- [ ] **7. Compare quality vs operational cost.** Include model size, training time/cost, inference latency, token use and deployment complexity. **Deliverable:** ICL vs LoRA trade-off matrix.
-- [ ] **8. Write and present findings.** Explain the research question, methods, leakage controls, fairness caveats, results, failure modes and threats to validity. **Deliverable:** CMU presentation + final report.
+- [x] **1. Choose the base model and initial hardware candidate.** The controlled target is the same pinned `Qwen/Qwen2.5-3B-Instruct` revision as M2. The user-provided AWS instance has an NVIDIA A10G (23 GB VRAM); a 32-example pilot confirmed CUDA/bfloat16 feasibility.
+- [x] **2. Prepare training data.** Implement `text → JSON label` chat formatting, strict label/text/duplicate validation, sequence-length checks, prompt-token loss masking, and train/validation ID hashes. Full train/validation tokenization is verified; the maximum lengths are 414 and 392. Dataset loading is pinned to explicit train/validation Parquet files. **Code:** `milestones/milestone3/src/training.py`, `milestones/milestone2/src/icl/dataset.py`.
+- [x] **3. Implement supervised LoRA training.** The full 3,923-example run completed 3 epochs / 1,473 optimizer steps on the A10G. Validation-loss selection chose epoch 1 (`checkpoint-491`, loss `0.0003891`); later epoch losses were higher. The run configuration, selected adapter, and hardware metadata are saved. **Code:** `milestones/milestone3/scripts/train_lora.py`; optional dependency: `.[training]`.
+- [x] **4. Run validation-only LoRA inference.** All 467 validation examples completed with zero inference failures. The selected LoRA model scored F1 `0.9984`, recall `1.0000`, and FPR `0.0063`. **Code:** `milestones/milestone3/src/detectors/lora.py`, `milestones/milestone3/scripts/evaluate_lora.py`.
+- [x] **5. Select the LoRA checkpoint using validation, not test.** Selected the best of three epoch checkpoints from one training configuration; no hyperparameter sweep was run. **Deliverable:** Frozen adapter at `milestones/milestone3/artifacts/lora-qwen2.5-3b/best_adapter`.
+- [x] **6. Compare frozen ICL and LoRA on paired validation outputs.** The fresh, pinned M2 8-shot rerun and LoRA predictions share the same 467 IDs, Qwen revision, prompt hash, CUDA/bfloat16 runtime, and greedy decoding. **Code:** `milestones/milestone3/scripts/compare_lora.py`.
+- [x] **7. Run the one-time held-out test evaluation.** Both frozen candidates completed the same 545 test IDs with zero inference failures. The paired report includes overall and family metrics, paired errors, exact McNemar testing, and 10,000-resample paired bootstrap intervals. **Deliverable:** `milestones/milestone3/data/reports/lora_vs_icl_test.json` (local, git-ignored) and the [M3 README summary](milestones/milestone3/README.md).
+- [~] **8. Compare quality vs operational cost.** The one-time test comparison favors LoRA on quality: F1 `0.9186 → 0.9982`, recall `0.9679 → 1.0000`, and FPR `0.1472 → 0.0038`; 48 ICL errors were fixed and 1 regression occurred (McNemar `p = 1.78e-13`). On validation, LoRA used fewer mean input tokens (`345.7` vs. `828.7`) but was slower per request (`0.4925s` vs. `0.3035s`) than 8-shot ICL on the A10G. Training-cost accounting and a complete trade-off matrix remain pending. Do not use test results to tune. **Deliverable:** ICL vs LoRA trade-off matrix.
+- [x] **9. Write the research reports.** Document the M3 experiment and prepare the integrated HW12 report covering Problems 1–4, including ethics, task formulation, ICL/model decisions, fine-tuning choices, test results, and qualitative error analysis. **Deliverables:** `milestones/milestone3/Milestone3Report.md` and [`final_report/Final_Report.md`](final_report/Final_Report.md).
+- [ ] **10. Prepare and present findings.** Adapt the report into the CMU presentation, including key figures, results, limitations, and an honest summary of the one-time test comparison. **Deliverable:** CMU presentation.
+
+**Paired validation snapshot (467 examples; development only):**
+
+| Candidate | F1 | Recall | FPR | Accuracy |
+|---|---:|---:|---:|---:|
+| Frozen 8-shot ICL | 0.9562 | 0.9578 | 0.0881 | 0.9422 |
+| LoRA, selected epoch 1 | 0.9984 | 1.0000 | 0.0063 | 0.9979 |
+| Difference (LoRA − ICL) | +4.21 pp | +4.22 pp | −8.18 pp | +5.57 pp |
+
+LoRA fixed 26 ICL errors with no regressions (exact McNemar `p = 2.98e-08`).
+Attack-family gains were strongest for `approval_authority_escalation`
+(F1 `0.9405 → 1.0000`) and `memory_trust_boundary`
+(`0.9818 → 1.0000`); benign FPR fell from 14/159 to 1/159. Both candidates
+were perfect on `rag_document_embedded` and `tool_function_abuse`. The historical
+M2 report's MPS score (`F1 0.9577`, `FPR 0.0755`) differs from the fresh CUDA
+rerun (`F1 0.9562`, `FPR 0.0881`); the fresh rerun is used for the paired
+comparison. See `milestones/milestone3/README.md` and the ignored JSON/CSV
+artifacts under `milestones/milestone3/data/reports/`.
+
+**Paired test snapshot (545 frozen examples; final one-time evaluation):**
+
+| Candidate | Accuracy | Precision | Recall | F1 | FPR |
+|---|---:|---:|---:|---:|---:|
+| Frozen 8-shot ICL | 0.9119 | 0.8742 | 0.9679 | 0.9186 | 0.1472 |
+| Frozen LoRA | 0.9982 | 0.9964 | 1.0000 | 0.9982 | 0.0038 |
+| LoRA − ICL | +8.62 pp | +12.22 pp | +3.21 pp | +7.96 pp | −14.34 pp |
+
+Paired errors: 48 fixed, 1 regression, 496 both correct, and 0 both wrong.
+Exact two-sided McNemar `p = 1.78e-13`. Paired 95% bootstrap CIs for the
+LoRA-minus-ICL differences were precision `[+8.61, +16.13]` pp, F1
+`[+5.80, +10.37]` pp, recall
+`[+1.38, +5.42]` pp, FPR `[−18.75, −10.12]` pp, and accuracy
+`[+6.42, +11.19]` pp. Attack-family point estimates and intervals are in the
+[M3 README](milestones/milestone3/README.md). These are benchmark-specific
+estimates; they do not establish perfect future performance or robustness to
+distribution shift.
 
 **M3 design constraints / next actions:**
 - Keep the base model, tokenizer, label mapping, JSON output contract and validation/test examples identical between ICL and LoRA where applicable; report training and inference costs separately.
-- Train only on the 3,923-row training split. Use validation for checkpoint/hyperparameter selection; do not inspect test examples or metrics before both candidates are frozen.
-- Start with ordinary LoRA on MPS as a feasibility pilot. M2 proves local MPS inference works, not that a particular LoRA training stack/config fits memory. Record peak memory, throughput, sequence length and actual device; use a CUDA GPU environment only if the pilot demonstrates a concrete need.
-- Treat validation-selected ICL and LoRA results as development results; make the final claim from the locked, paired 545-row test evaluation.
+- Train only on the 3,923-row training split. Validation was used for checkpoint selection; both candidates are frozen and the single paired test phase is complete. Do not use test outcomes for tuning or model changes.
+- The local execution host is an Intel Core i7-7567U (`x86_64`) without CUDA or MPS. The user-provided AWS A10G is the verified training target; record its GPU/runtime, peak memory, throughput, sequence length and actual device in run metadata.
+- The 32-train/32-validation pilot has passed on CUDA. The full baseline uses the pinned train/validation Parquet files only; a failed early loader attempt materialized test data in the HF cache but did not use test examples for training, selection or evaluation.
+- Treat validation-selected ICL and LoRA results as development results with selection optimism; make the final claim from the locked, paired 545-row test evaluation. Training runtime metadata includes resumed/recovery segments and does not capture the original step-491 segment, so it is not a complete training-cost estimate.
 
-**M3 exit criterion:** A complete, reproducible research comparison with a test-set conclusion (and honest limitations).
+**M3 exit criterion:** A complete, reproducible research comparison with a paired test-set conclusion (and honest limitations). Training, validation, the one-time paired test, and the written report are complete; presentation and cost accounting remain.
 
 ---
 
@@ -179,7 +218,7 @@ M6 Productionization
 M7 Portfolio + interview story
 ```
 
-**Scope control:** Finish **M3 LoRA and the locked test comparison** before expanding deeply into M4–M7. M1/M2 development work is complete; preserve their frozen candidates and do not reopen test data for further tuning. The core project asks *which detector approach works better and at what cost?* The extension asks *how do we safely operate that detector inside a real agentic system?*
+**Scope control:** Finish the **M3 research report, presentation, and cost accounting** before expanding deeply into M4–M7. M1/M2 development work and the one-time M3 test comparison are complete; preserve the frozen candidates and do not reopen test data for further tuning. The core project asks *which detector approach works better and at what cost?* The extension asks *how do we safely operate that detector inside a real agentic system?*
 
 ## Reusable engineering pattern (apply to every milestone)
 
@@ -207,14 +246,18 @@ M7 Portfolio + interview story
 | `milestones/milestone1/scripts/compare_models.py` | Paired evaluation, McNemar | M1 implemented |
 | `milestones/milestone2/src/icl/example_selector.py` | Training-only shot selection and leakage checks | M2 implemented |
 | `milestones/milestone2/src/detectors/few_shot.py` | Local HF and OpenAI few-shot wrapper | M2 implemented |
-| `milestones/milestone2/scripts/run_few_shot.py` | Checkpointed ICL validation runner | M2 implemented |
+| `milestones/milestone2/scripts/run_few_shot.py` | Checkpointed ICL validation runner | M2 implemented; now loads only validation Parquet |
+| `milestones/milestone2/src/icl/dataset.py` | Pinned split-specific benchmark loader | Train/validation by default; explicit final-test opt-in |
 | `milestones/milestone2/scripts/analyze_icl.py` | Paired, subgroup and cost/latency analysis | M2 implemented |
-| `milestones/milestone2/manifests/random_seed42_8shot.json` | Frozen training-only ICL candidate | M2 selected on validation; test sealed |
-| `milestones/milestone3/scripts/train_lora.py` | LoRA training pipeline | M3 planned |
-| `milestones/milestone3/` | LoRA model, paired test comparison and report | M3 not started |
+| `milestones/milestone2/manifests/random_seed42_8shot.json` | Frozen training-only ICL candidate | M2 selected on validation; evaluated once in final paired test |
+| `milestones/milestone3/scripts/train_lora.py` | LoRA training pipeline | 3 epochs / 1,473 steps complete; best checkpoint-491 |
+| `milestones/milestone3/scripts/evaluate_lora.py` | Checkpointed adapter evaluation on validation or explicit final test | 467/467 validation and 545/545 test complete |
+| `milestones/milestone3/scripts/compare_lora.py` | Paired M2 ICL vs LoRA metrics, family analysis and uncertainty | Validation and one-time test comparisons complete |
+| `milestones/milestone3/src/training.py` | Train/validation formatting, checks and masked completion loss | Implemented and verified on pinned Qwen tokenizer |
+| `milestones/milestone3/Milestone3Report.md` | Final English M3 research report | Written report complete; presentation and cost accounting pending |
 | `src/policy/engine.py` | Deterministic authorization | M4 planned |
 | `src/agents/` | Agent runtime / sandbox tools | M4 planned |
 | `src/storage/`, `src/rag/` | State and contextual retrieval | M5 planned |
 | `src/api/`, `src/observability/` | Service and production monitoring | M6 planned |
 
-*Milestone 1 and 2 paths are organized under `milestones/milestone1/` and `milestones/milestone2/`. M3 is the next stage; its directory and training code have not yet been created.*
+*Milestone 1 and 2 paths are organized under `milestones/milestone1/` and `milestones/milestone2/`; M3 training, paired validation, the one-time paired test, and the written report are complete under `milestones/milestone3/`. The remaining work is the presentation and complete training-cost accounting. The initial failed pilot materialized the test parquet in the Hugging Face cache but did not use test examples for training, selection, or evaluation; the later final evaluation used the pinned test data only after both candidates were frozen. Do not tune from the test results.*

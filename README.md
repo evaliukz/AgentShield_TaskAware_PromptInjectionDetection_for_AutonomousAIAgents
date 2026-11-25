@@ -11,10 +11,14 @@
 ## Implementation by milestone
 
 Code and generated reports are grouped under [`milestones/`](./milestones/README.md).
-The Milestone 1 baseline is implemented; its held-out test remains pending.
-Milestone 2 is reserved for few-shot in-context learning.
+Milestones 1 and 2 are complete as development studies. The frozen M2 ICL and
+M3 LoRA candidates completed a one-time paired evaluation on the held-out test;
+see the [M3 results](./milestones/milestone3/README.md). Those test results are
+not being used for further tuning.
 See the [Milestone 1 guide](./milestones/milestone1/README.md) for the code map
 and commands.
+
+Course deliverables: [recommended presentation slides and script](./presentation/Recommended_Slides_and_Script.md) and the [integrated HW12 final report](./final_report/Final_Report.md).
 
 ## 1. Short English proposal (ready to adapt and submit)
 
